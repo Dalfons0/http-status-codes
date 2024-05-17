@@ -3,42 +3,46 @@ import {
   reasonPhraseToStatusCode,
 } from './utils';
 
-const checkResult = <T>(result: T, message: string): T => {
-  if (!result) {
-    throw new Error(message);
+const getDefaultFallback = (message: string) => <T>(param?: T): any => {
+  if (!param) {
+    throw new Error(`${message} ${param}`);
   }
 
-  return result;
+  return param;
 }
+
+const defaultReasonPhraseFallback = getDefaultFallback(`Status code does not exist:`);
+
+const defaultStatusCodeFallback = getDefaultFallback(`Reason phrase does not exist:`);
 
 /**
  * Returns the reason phrase for the given status code.
- * If the given status code does not exist, an error is thrown if the flag throwWhenMissing is set up to true,
- * otherwise return undefined.
+ * If the given status code does not exist, a fallback function is called passing the status code provided,
+ * which by default throws an error indicating that the status code it's missing.
  *
  * @param {number|string} statusCode The HTTP status code
- * @param {boolean} [throwWhenMissing=true] Flag to indicate that an error should be thrown if the status code provided is missing 
+ * @param {function} [fallback] Optional fallback function that it's called if the status code is missing 
  * @returns {string} The associated reason phrase (e.g. "Bad Request", "OK")
  * */
-export function getReasonPhrase(statusCode: (number | string), throwWhenMissing = true): (string) {
+export function getReasonPhrase(statusCode: (number | string), fallback = defaultReasonPhraseFallback): (string) {
   const result = statusCodeToReasonPhrase[statusCode.toString()];
 
-  return throwWhenMissing ? checkResult(result, `Status code does not exist: ${statusCode}`) : result;
+  return result ? result : fallback(statusCode);
 }
 
 /**
  * Returns the status code for the given reason phrase.
- * If the given reason phrase does not exist, an error is thrown if the flag throwWhenMissing is set up to true,
- * otherwise return undefined.
+ * If the given reason phrase does not exist, a fallback function is called passing the reason phrase provided,
+ * which by default throws an error indicating that the reason code it's missing.
  *
  * @param {string} reasonPhrase The HTTP reason phrase (e.g. "Bad Request", "OK")
- * @param {boolean} [throwWhenMissing=true] Flag to indicate that an error should be thrown if the reason phrase is missing
+ * @param {function} [fallback] Optional fallback function that it's called if the reason phrase is missing
  * @returns {string} The associated status code
  * */
-export function getStatusCode(reasonPhrase: string, throwWhenMissing = true): (number) {
+export function getStatusCode(reasonPhrase: string, fallback = defaultStatusCodeFallback): (number) {
   const result = reasonPhraseToStatusCode[reasonPhrase];
 
-  return throwWhenMissing ? checkResult(result, `Reason phrase does not exist: ${reasonPhrase}`) : result;
+  return result ? result : fallback(reasonPhrase);
 }
 
 /**
